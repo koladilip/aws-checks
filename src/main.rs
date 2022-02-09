@@ -1,10 +1,10 @@
+use aws_sdk_s3::Client;
 use std::fmt::Debug;
 
-use aws_sdk_s3::{Client, Error};
 use aws_smithy_types::date_time::Format;
 use clap::Parser;
 use rust_aws_security_reporter::services::s3;
-use rust_aws_security_reporter::utils::credentials;
+use rust_aws_security_reporter::common::credentials;
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -19,25 +19,37 @@ struct Args {
     profile: String,
 }
 
-async fn show_buckets(client: &Client) -> Result<(), Error> {
-    let resp = s3::buckets(client).await?;
+async fn show_buckets(client: &Client){
+    let resp = s3::list_buckets(client).await;
 
-    for bucket in resp.buckets().unwrap_or_default() {
+    for bucket in resp.unwrap().buckets().unwrap_or_default() {
         println!("Name:        {}", bucket.name().unwrap_or_default());
         println!("Created:     {:?}", bucket.creation_date().unwrap().fmt(Format::DateTime).unwrap());
         println!();
     }
-
-    Ok(())
 }
 
+async fn show_buckets_versioning(client: &Client){
+    let resp = s3::list_buckets_versioning(client).await;
+
+    for (bucket_name, versioning) in resp.unwrap() {
+        println!("Name: {}", bucket_name);
+        println!("Status: {:?}", versioning.status());
+        println!("MFA: {:?}", versioning.mfa_delete());
+        println!();
+    }
+
+}
 #[tokio::main]
-async fn main() -> Result<(), Error> {
+async fn main(){
     let args = Args::parse();
     let region = args.region;
+
     let profile: String = args.profile;
 
     let shared_config = credentials::get_from_profile(region, profile).await;
     let client = Client::new(&shared_config);
-    show_buckets(&client).await
+    
+    show_buckets(&client).await;
+    show_buckets_versioning(&client).await;
 }
