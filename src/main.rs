@@ -29,17 +29,17 @@ async fn show_buckets(client: &Client){
     }
 }
 
-async fn show_buckets_versioning(client: &Client){
-    let resp = s3::list_buckets_versioning(client).await;
+async fn show_bucket_props(client: &Client){
+    let resp = s3::list_bucket_polices(client).await;
 
-    for (bucket_name, versioning) in resp.unwrap() {
+    println!("is error {}", resp.is_err());
+    for (bucket_name, policy) in resp.unwrap() {
         println!("Name: {}", bucket_name);
-        println!("Status: {:?}", versioning.status());
-        println!("MFA: {:?}", versioning.mfa_delete());
+        println!("Policy: {:?}", policy.policy());
         println!();
     }
-
 }
+
 #[tokio::main]
 async fn main(){
     let args = Args::parse();
@@ -51,5 +51,5 @@ async fn main(){
     let client = Client::new(&shared_config);
     
     show_buckets(&client).await;
-    show_buckets_versioning(&client).await;
+    show_bucket_props(&client).await;
 }
