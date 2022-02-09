@@ -30,12 +30,11 @@ async fn show_buckets(client: &Client){
 }
 
 async fn show_bucket_props(client: &Client){
-    let resp = s3::list_bucket_polices(client).await;
+    let resp = s3::list_buckets_lifecycle_configuration(client).await;
 
-    println!("is error {}", resp.is_err());
-    for (bucket_name, policy) in resp.unwrap() {
+    for (bucket_name, lifecycle) in resp.unwrap() {
         println!("Name: {}", bucket_name);
-        println!("Policy: {:?}", policy.policy());
+        println!("Rules: {:?}", lifecycle.rules());
         println!();
     }
 }
