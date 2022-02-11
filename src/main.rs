@@ -1,12 +1,10 @@
-use aws_sdk_s3::Client;
+use aws_sdk_iam::Client;
 use std::fmt::Debug;
 
-use aws_smithy_types::date_time::Format;
 use clap::Parser;
-use rust_aws_security_reporter::services::s3;
+use rust_aws_security_reporter::services::iam;
 use rust_aws_security_reporter::common::credentials;
 
-/// Simple program to greet a person
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
 struct Args {
@@ -19,22 +17,22 @@ struct Args {
     profile: String,
 }
 
-async fn show_buckets(client: &Client){
-    let resp = s3::list_buckets(client).await;
+async fn show_users(client: &Client){
+    let resp = iam::list_users(client).await;
 
-    for bucket in resp.unwrap().buckets().unwrap_or_default() {
-        println!("Name:        {}", bucket.name().unwrap_or_default());
-        println!("Created:     {:?}", bucket.creation_date().unwrap().fmt(Format::DateTime).unwrap());
+    for user in resp.unwrap().users().unwrap_or_default() {
+        println!("Name:        {}", user.user_name().unwrap_or_default());
+        println!("UserID:     {:?}", user.user_id().unwrap_or_default());
         println!();
     }
 }
 
-async fn show_bucket_props(client: &Client){
-    let resp = s3::list_buckets_lifecycle_configuration(client).await;
+async fn show_props(client: &Client){
+    let resp = iam::list_user_policies(client).await;
 
-    for (bucket_name, lifecycle) in resp.unwrap() {
-        println!("Name: {}", bucket_name);
-        println!("Rules: {:?}", lifecycle.rules());
+    for (user_name, policy) in resp.unwrap() {
+        println!("Name: {}", user_name);
+        println!("Policy: {:?}", policy.policy_document());
         println!();
     }
 }
@@ -49,6 +47,6 @@ async fn main(){
     let shared_config = credentials::get_from_profile(region, profile).await;
     let client = Client::new(&shared_config);
     
-    show_buckets(&client).await;
-    show_bucket_props(&client).await;
+    show_users(&client).await;
+    show_props(&client).await;
 }

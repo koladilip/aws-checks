@@ -15,7 +15,6 @@ use std::collections::HashMap;
     convert = r#"{String::from("s3_buckets")}"#
 )]
 pub async fn list_buckets(client: &Client) -> Result<ListBucketsOutput, AWSError> {
-    println!("Inside list buckets");
     client.list_buckets().send().await.map_err(AWSError::new)
 }
 
@@ -34,7 +33,7 @@ async fn get_bucket_versioning(
 pub async fn list_buckets_versioning(
     client: &Client,
 ) -> Result<HashMap<String, GetBucketVersioningOutput>, AWSError> {
-    let buckets_response: ListBucketsOutput = list_buckets(client).await?;
+    let buckets_response = list_buckets(client).await?;
     if let Some(buckets) = buckets_response.buckets {
         let mut buckets_versioning = HashMap::new();
         for bucket_name in buckets
@@ -67,7 +66,7 @@ async fn get_bucket_acl(
 pub async fn list_bucket_acls(
     client: &Client,
 ) -> Result<HashMap<String, GetBucketAclOutput>, AWSError> {
-    let buckets_response: ListBucketsOutput = list_buckets(client).await?;
+    let buckets_response = list_buckets(client).await?;
     if let Some(buckets) = buckets_response.buckets {
         let mut bucket_acls = HashMap::new();
         for bucket_name in buckets
@@ -159,7 +158,11 @@ async fn get_bucket_lifecycle_configuration(
     client: &Client,
     bucket_name: &String,
 ) -> Result<GetBucketLifecycleConfigurationOutput, AWSError> {
-    let response = client.get_bucket_lifecycle_configuration().bucket(bucket_name).send().await;
+    let response = client
+        .get_bucket_lifecycle_configuration()
+        .bucket(bucket_name)
+        .send()
+        .await;
     match response {
         Ok(result) => Ok(result),
         Err(aws_sdk_s3::SdkError::ServiceError { err, .. })
@@ -174,7 +177,7 @@ async fn get_bucket_lifecycle_configuration(
 pub async fn list_buckets_lifecycle_configuration(
     client: &Client,
 ) -> Result<HashMap<String, GetBucketLifecycleConfigurationOutput>, AWSError> {
-    let buckets_response: ListBucketsOutput = list_buckets(client).await?;
+    let buckets_response = list_buckets(client).await?;
     if let Some(buckets) = buckets_response.buckets {
         let mut buckets_lifecycle = HashMap::new();
         for bucket_name in buckets
