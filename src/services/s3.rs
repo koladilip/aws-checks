@@ -6,15 +6,26 @@ use aws_sdk_s3::{
     },
     Client,
 };
+use aws_types::config::Config;
 use cached::proc_macro::cached;
 use std::collections::HashMap;
+
+#[derive(Debug)]
+pub struct Bucket {
+    pub name: String,
+    pub versioning: GetBucketVersioningOutput,
+    pub logging: GetBucketLoggingOutput,
+    pub acl: GetBucketAclOutput,
+    pub policy: GetBucketPolicyOutput,
+    pub lifecycle: GetBucketLifecycleConfigurationOutput,
+}
 
 #[cached(
     result = true,
     key = "String",
     convert = r#"{String::from("s3_buckets")}"#
 )]
-pub async fn list_buckets(client: &Client) -> Result<ListBucketsOutput, AWSError> {
+async fn list_buckets(client: &Client) -> Result<ListBucketsOutput, AWSError> {
     client.list_buckets().send().await.map_err(AWSError::new)
 }
 
@@ -193,4 +204,41 @@ pub async fn list_buckets_lifecycle_configuration(
     } else {
         Ok(HashMap::new())
     }
+}
+
+pub async fn get_bucket_info(client: &Client, name: String) -> Result<Bucket, AWSError> {
+    let (acl, policy, logging, versioning, lifecycle) = tokio::join!(
+        get_bucket_acl(client, &name),
+        get_bucket_policy(client, &name),
+        get_bucket_logging(client, &name),
+        get_bucket_versioning(client, &name),
+        get_bucket_lifecycle_configuration(client, &name),
+    );
+    Ok(Bucket {
+        name,
+        acl: acl?,
+        policy: policy?,
+        logging: logging?,
+        versioning: versioning?,
+        lifecycle: lifecycle?,
+    })
+}
+
+pub fn get_client(config: &Config) -> Client {
+    Client::new(config)
+}
+
+pub async fn list_buckets_info(client: &Client) -> Result<Vec<Bucket>, AWSError> {
+    let buckets_response = list_buckets(&client).await?;
+    let mut buckets_info = Vec::new();
+
+    if let Some(buckets) = buckets_response.buckets {
+        for bucket_name in buckets
+            .iter()
+            .map(|bucket| bucket.name().unwrap().to_string())
+        {
+            buckets_info.push(get_bucket_info(&client, bucket_name).await?);
+        }
+    }
+    Ok(buckets_info)
 }

@@ -4,6 +4,7 @@ use aws_sdk_iam::output::ListUsersOutput;
 use aws_sdk_iam::Client;
 use cached::proc_macro::cached;
 use std::collections::HashMap;
+use aws_types::config::Config;
 
 #[cached(
     result = true,
@@ -12,18 +13,6 @@ use std::collections::HashMap;
 )]
 pub async fn list_users(client: &Client) -> Result<ListUsersOutput, AWSError> {
     client.list_users().send().await.map_err(AWSError::new)
-}
-
-pub async fn get_user_policy1(
-    client: &Client,
-    user_name: &String,
-) -> Result<GetUserPolicyOutput, AWSError> {
-    client
-        .get_user_policy()
-        .user_name(user_name)
-        .send()
-        .await
-        .map_err(AWSError::new)
 }
 
 async fn get_user_policy(
@@ -58,4 +47,8 @@ pub async fn list_user_policies(
     } else {
         Ok(HashMap::new())
     }
+}
+
+pub fn get_client(config: &Config) -> Client {
+    Client::new(config)
 }
