@@ -5,6 +5,7 @@ use aws_sdk_iam::Client;
 use cached::proc_macro::cached;
 use std::collections::HashMap;
 use aws_types::config::Config;
+use aws_smithy_http::result::SdkError;
 
 #[cached(
     result = true,
@@ -22,7 +23,7 @@ async fn get_user_policy(
     let response = client.get_user_policy().user_name(user_name).send().await;
     match response {
         Ok(result) => Ok(result),
-        Err(aws_sdk_s3::SdkError::ServiceError { err, .. })
+        Err(SdkError::ServiceError { err, .. })
             if err.code() == Some("ValidationError") =>
         {
             Ok(GetUserPolicyOutput::builder().build())

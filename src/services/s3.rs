@@ -9,6 +9,7 @@ use aws_sdk_s3::{
 use aws_types::config::Config;
 use cached::proc_macro::cached;
 use std::collections::HashMap;
+use aws_smithy_http::result::SdkError;
 
 #[derive(Debug)]
 pub struct Bucket {
@@ -102,7 +103,7 @@ async fn get_bucket_policy(
     let response = client.get_bucket_policy().bucket(bucket_name).send().await;
     match response {
         Ok(result) => Ok(result),
-        Err(aws_sdk_s3::SdkError::ServiceError { err, .. })
+        Err(SdkError::ServiceError { err, .. })
             if err.code() == Some("NoSuchBucketPolicy") =>
         {
             Ok(GetBucketPolicyOutput::builder().build())
@@ -176,7 +177,7 @@ async fn get_bucket_lifecycle_configuration(
         .await;
     match response {
         Ok(result) => Ok(result),
-        Err(aws_sdk_s3::SdkError::ServiceError { err, .. })
+        Err(SdkError::ServiceError { err, .. })
             if err.code() == Some("NoSuchLifecycleConfiguration") =>
         {
             Ok(GetBucketLifecycleConfigurationOutput::builder().build())
